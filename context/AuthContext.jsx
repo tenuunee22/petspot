@@ -38,20 +38,46 @@ export default function AuthProvider({ children }) {
 
   // Phone auth: send OTP
   const sendPhoneOtp = async (phoneNumber, recaptchaContainerId = 'recaptcha-container') => {
+    if (!auth) {
+      throw new Error('Firebase auth is not initialized. Check lib/firebase.js and your .env.local values.');
+    }
     // initialize reCAPTCHA if not exists
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        recaptchaContainerId,
-        { size: 'invisible' },
-        auth
-      );
+      window.recaptchaVerifier = new RecaptchaVerifier(recaptchaContainerId, { size: 'invisible' }, auth);
+      // render ensures the underlying grecaptcha script is loaded and ready
+      try {
+        await window.recaptchaVerifier.render();
+      } catch (renderErr) {
+        // rendering can fail if grecaptcha is blocked; surface the error to caller
+        console.error('reCAPTCHA render failed', renderErr);
+        throw renderErr;
+      }
     }
 
     const appVerifier = window.recaptchaVerifier;
-    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-    // store confirmationResult for later verification
-    window.__firebaseConfirmationResult = confirmationResult;
-    return confirmationResult;
+    if (!appVerifier) {
+      // This usually means grecaptcha failed to load or the verifier wasn't created.
+      throw new Error('reCAPTCHA verifier not initialized. Ensure #recaptcha-container exists and grecaptcha is allowed (disable adblockers).');
+    }
+    try {
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      // store confirmationResult for later verification
+      window.__firebaseConfirmationResult = confirmationResult;
+      return confirmationResult;
+    } catch (err) {
+      // common cause: invalid/expired reCAPTCHA token or blocked grecaptcha
+      // reset the verifier so caller can retry
+      try {
+        // some SDK builds expose a clear method on the verifier
+        if (window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') {
+          window.recaptchaVerifier.clear();
+        }
+      } catch (clearErr) {
+        console.warn('Failed to clear reCAPTCHA verifier', clearErr);
+      }
+      window.recaptchaVerifier = null;
+      throw err;
+    }
   };
 
   const verifyPhoneOtp = async (code) => {

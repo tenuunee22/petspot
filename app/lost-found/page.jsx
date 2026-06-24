@@ -1,75 +1,87 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function LostFound() {
   const [filter, setFilter] = useState('all');
   const [searchType, setSearchType] = useState('all');
+  const [posts, setPosts] = useState([]);
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
+  const [showPublishedBanner, setShowPublishedBanner] = useState(false);
+  const searchParams = useSearchParams();
 
-  // Sample posts data
-  const posts = [
-    {
-      id: 1,
-      type: 'lost',
-      title: 'Алга болсон: Хар эргүүд бүхий улаан нохой',
-      breed: 'Далматин',
-      location: 'Улаанбаатар, Баянзүрх дүүрэг',
-      date: '2025-12-03',
-      photo: '🐕',
-      contact: '88012345',
-      details: 'Задгай хотын нэг нүүрэнд алга болсон. Маш эелтэй нохой. Олсон хүнд урамшуулал өгнө.',
-      isPremium: false
-    },
-    {
-      id: 2,
-      type: 'lost',
-      title: 'Алга болсон: Цагаан муур',
-      breed: 'Перс',
-      location: 'Улаанбаатар, Сүхбаатар дүүрэг',
-      date: '2025-12-02',
-      photo: '😸',
-      contact: '88054321',
-      details: 'Дотроо өсөж байсан муур сүүлийн өдрүүдэд алга болсон.',
-      isPremium: true
-    },
-    {
-      id: 3,
-      type: 'found',
-      title: 'Олсон: Бурийн өнгийн нохой',
-      breed: 'Метис',
-      location: 'Улаанбаатар, Хан-Уул дүүрэг',
-      date: '2025-12-01',
-      photo: '🐕',
-      contact: '88087654',
-      details: 'Ойр дахь үй хөрш дээр олсон нохой. Маш сайхан нохой. Эзэмшигч хайж байна.',
-      isPremium: false
-    },
-    {
-      id: 4,
-      type: 'found',
-      title: 'Олсон: Том шар нохой',
-      breed: 'Лабрадор',
-      location: 'Улаанбаатар, Баянгөл дүүрэг',
-      date: '2025-11-30',
-      photo: '🐕',
-      contact: '88098765',
-      details: 'Том шар нохойг олсон. Их сайхан байдаг. Эзэмшигчтэй холбоотун авна.',
-      isPremium: true
-    },
-    {
-      id: 5,
-      type: 'lost',
-      title: 'Алга болсон: Жижиг цагаан нохой',
-      breed: 'Чихуахуа',
-      location: 'Улаанбаатар, Сонгинохайрхан дүүрэг',
-      date: '2025-12-04',
-      photo: '🐕',
-      contact: '88011111',
-      details: 'Жижиг нохой 5 хоног алга болсон. Оченно сайн нохой. Олсон хүнээс асуу.',
-      isPremium: true
-    }
-  ];
+  useEffect(() => {
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+      setPosts(items);
+    }, (err) => {
+      console.error('Failed to subscribe to posts', err);
+    });
 
-  const filtered = posts.filter(post => {
+    return () => unsubscribe();
+  }, []);
+
+    useEffect(() => {
+      const q = query(
+        collection(db, 'posts'),
+        where('published', '==', true),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+        setPosts(items);
+      }, (err) => {
+        console.error('Failed to subscribe to posts', err);
+      });
+
+      return () => unsubscribe();
+    }, []);
+
+    // Check for highlight param or session flag when component mounts
+    useEffect(() => {
+      try {
+        const param = searchParams?.get('highlight');
+        if (param) {
+          setHighlightedPostId(param);
+          setShowPublishedBanner(true);
+          // hide banner after 4s
+          setTimeout(() => setShowPublishedBanner(false), 4000);
+        } else {
+          // also check sessionStorage fallback
+          const rec = sessionStorage.getItem('published_post');
+          if (rec) {
+            const parsed = JSON.parse(rec);
+            if (parsed?.id) {
+              setHighlightedPostId(parsed.id);
+              setShowPublishedBanner(true);
+              setTimeout(() => setShowPublishedBanner(false), 4000);
+              // clear session flag
+              sessionStorage.removeItem('published_post');
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, [searchParams]);
+
+    // When posts load, auto-scroll to highlighted post if present
+    useEffect(() => {
+      if (!highlightedPostId || posts.length === 0) return;
+      const el = document.getElementById(`post-${highlightedPostId}`);
+      if (el) {
+        // add temporary highlight
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const original = el.style.boxShadow;
+        el.style.boxShadow = '0 0 0 6px rgba(40,167,69,0.12)';
+        setTimeout(() => { el.style.boxShadow = original || ''; }, 3500);
+      }
+    }, [posts, highlightedPostId]);
+  const filtered = posts.filter((post) => {
     let typeMatch = true;
     let filterMatch = true;
 
@@ -89,6 +101,12 @@ export default function LostFound() {
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: 20 }}>
       <h1 style={{ fontSize: 32, marginBottom: 30 }}>🔍 Алга болсон / Олсон нохой, муур</h1>
+
+      {showPublishedBanner && (
+        <div style={{ backgroundColor: '#d4edda', border: '2px solid #28a745', color: '#155724', padding: 12, borderRadius: 8, marginBottom: 20, textAlign: 'center', fontWeight: 'bold' }}>
+          ✅ Таны пост нийтэлэгдсэн! Та одоо пост руу шилжиж байна...
+        </div>
+      )}
 
       <div style={{
         display: 'grid',
@@ -145,6 +163,7 @@ export default function LostFound() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {filtered.map((post) => (
           <div
+            id={`post-${post.id}`}
             key={post.id}
             style={{
               border: '2px solid #ddd',
@@ -165,7 +184,7 @@ export default function LostFound() {
                 fontWeight: 'bold',
                 fontSize: 12
               }}>
-                ⭐ СҮҮЛТЭЙ БОЛГОСОН ПОСТ
+                ⭐ ТОХИРУУЛСАН ПОСТ
               </div>
             )}
 
@@ -173,9 +192,20 @@ export default function LostFound() {
               fontSize: 60,
               textAlign: 'center',
               padding: 20,
-              backgroundColor: '#f8f9fa'
+              backgroundColor: '#f8f9fa',
+              minHeight: 200,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
             }}>
-              {post.photo}
+              {post.photoUrl ? (
+                <img 
+                  src={post.photoUrl} 
+                  alt={post.petName}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
+                />
+              ) : '🐕'}
             </div>
 
             <div style={{ padding: 16 }}>
@@ -184,17 +214,17 @@ export default function LostFound() {
                 marginBottom: 12,
                 color: post.type === 'lost' ? '#dc3545' : '#28a745'
               }}>
-                {post.title}
+                {post.type === 'lost' ? `Алга болсон: ${post.petName}` : `Олсон: ${post.petName}`}
               </h2>
 
               <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
-                <p><strong>Төрөл:</strong> {post.breed}</p>
-                <p><strong>Байршил:</strong> {post.location}</p>
-                <p><strong>Огноо:</strong> {post.date}</p>
+                <p><strong>Төрөл:</strong> {post.breed || '-'}</p>
+                <p><strong>Байршил:</strong> {post.location || '-'}</p>
+                <p><strong>Огноо:</strong> {post.lostDate ? new Date(post.lostDate.seconds ? post.lostDate.seconds * 1000 : post.lostDate).toLocaleDateString() : (post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : '-')}</p>
               </div>
 
               <p style={{ marginBottom: 12, fontSize: 14, lineHeight: 1.6 }}>
-                {post.details}
+                {post.description}
               </p>
 
               <div style={{
@@ -205,7 +235,7 @@ export default function LostFound() {
                 borderLeft: '4px solid #2c5aa0'
               }}>
                 <p style={{ margin: 0, fontSize: 14 }}>
-                  <strong>📞 Холбоотын мэдээ:</strong> {post.contact}
+                  <strong>📞 Холбоотын мэдээ:</strong> {post.phoneNumber}
                 </p>
               </div>
 

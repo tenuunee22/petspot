@@ -1,5 +1,10 @@
-'use client';
+"use client";
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../context/AuthContext';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../../lib/firebase';
 
 export default function CreatePost(){
   const [formData, setFormData] = useState({
@@ -17,6 +22,14 @@ export default function CreatePost(){
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState('');
+  const [notificationVisible, setNotificationVisible] = useState(false);
+
+  const router = useRouter();
+  const { user } = useAuth();
+
+  // (payment requirement removed) users can create posts without paying
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -29,9 +42,10 @@ export default function CreatePost(){
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Store the file object for preview, not just the name
       setFormData(prev => ({
         ...prev,
-        photo: file.name
+        photo: file
       }));
     }
   };
@@ -41,55 +55,132 @@ export default function CreatePost(){
     
     // Validate required fields
     if (!formData.petName || !formData.location || !formData.phoneNumber) {
-      alert('Пожалуйста, заполните все обязательные поля');
+      alert('Бүх заавал бөглөх талбарыг дүүргэнэ үү');
       return;
     }
-
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
     
-    // Reset form after 2 seconds
-    setTimeout(() => {
-      setFormData({
-        type: 'lost',
-        petName: '',
-        breed: '',
-        color: '',
-        lostDate: '',
-        location: '',
-        description: '',
-        phoneNumber: '',
-        email: '',
-        isPremium: false,
-        photo: null
+    // Prevent double submissions
+    if (loading) return;
+    setLoading(true);
+    
+    try {
+      let photoUrl = null;
+      
+      // Upload photo to Firebase Storage if provided
+      if (formData.photo) {
+        const storageRef = ref(storage, `posts/${Date.now()}_${formData.photo.name}`);
+        await uploadBytes(storageRef, formData.photo);
+        photoUrl = await getDownloadURL(storageRef);
+      }
+      
+      // save post to Firestore with photo URL
+      const docRef = await addDoc(collection(db, 'posts'), {
+        type: formData.type,
+        petName: formData.petName,
+        breed: formData.breed,
+        color: formData.color,
+        lostDate: formData.lostDate || null,
+        location: formData.location,
+        description: formData.description,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email || null,
+        isPremium: !!formData.isPremium,
+        photoUrl: photoUrl,
+        authorUid: user?.uid || null,
+        authorEmail: user?.email || null,
+          published: true,
+          status: 'active',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
       });
-      setSubmitted(false);
-    }, 3000);
+
+      console.log('Post saved with id', docRef.id);
+      // Save a short session flag so the listing page can show a header message
+      try {
+        sessionStorage.setItem('published_post', JSON.stringify({ id: docRef.id, message: '✅ Таны пост нийтэлэгдсэн!' }));
+      } catch (e) {
+        console.warn('Could not write published flag to sessionStorage', e);
+      }
+
+      // allow UI to re-enable buttons in case navigation fails
+      setLoading(false);
+
+      // Redirect user to the public listing and highlight the newly published post
+      try {
+        router.push(`/lost-found?highlight=${docRef.id}`);
+      } catch (navErr) {
+        console.error('Navigation to listing failed', navErr);
+        alert('Пост амжилттай хадгалагдсан, гэхдээ шилжүүлэхэд алдаа гарлаа. Та "Постын хуудас" руу гарах боломжтой.');
+      }
+    } catch (err) {
+      console.error('Failed to save post', err);
+      alert('Постыг хадгалах үед алдаа гарлаа. Дахин оролдоно уу.');
+      setLoading(false);
+    }
   };
 
-  if (submitted) {
+  if (submitted && notificationVisible) {
     return (
-      <main style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}>
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa' }}>
         <div style={{
           backgroundColor: '#d4edda',
-          border: '1px solid #c3e6cb',
+          border: '2px solid #28a745',
           color: '#155724',
-          padding: 30,
-          borderRadius: 8,
-          textAlign: 'center'
+          padding: 40,
+          borderRadius: 12,
+          textAlign: 'center',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          maxWidth: 500
         }}>
-          <h2 style={{ fontSize: 24, marginBottom: 16 }}>✅ Амжилттай!</h2>
-          <p style={{ fontSize: 16, marginBottom: 16 }}>
-            Таны пост амжилттай оруулагдлаа! Хүмүүс та нохойтохой олоход туслахаар л болно.
+          <h2 style={{ fontSize: 28, marginBottom: 16, margin: '0 0 16px 0' }}>✅ Таны пост нийтэлэгдсэн!</h2>
+          <p style={{ fontSize: 16, color: '#155724', margin: '0 0 8px 0' }}>
+            Таны пост амжилттай нийтэлэгдлаа.
           </p>
-          <p style={{ fontSize: 14, color: '#155724' }}>
-            Таны утасны дугаарыг сонирхож байгаа хүмүүс холбоо авах болно.
+          <p style={{ fontSize: 14, color: '#155724', margin: '0 0 20px 0' }}>
+            Та одоо миний профайлд очиж постоо харж болно.
           </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button onClick={() => router.push('/profile')} style={{ padding: '10px 20px', backgroundColor: '#2c5aa0', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 'bold' }}>
+              👤 Миний профайл
+            </button>
+            <button onClick={() => router.push('/lost-found')} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 'bold' }}>
+              🔍 Постын хуудас
+            </button>
+          </div>
         </div>
       </main>
     );
   }
 
+  // Check if user is logged in
+  if (!user) {
+    return (
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa' }}>
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '2px solid #856404',
+          color: '#856404',
+          padding: 40,
+          borderRadius: 12,
+          textAlign: 'center',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          maxWidth: 500
+        }}>
+          <h2 style={{ fontSize: 28, marginBottom: 16 }}>⚠️ Нэвтрэх шаардлагатай</h2>
+          <p style={{ fontSize: 16, marginBottom: 24 }}>Пост үүсгэхийн өмнө та нэвтрэх ёстой.</p>
+          <button onClick={() => router.push('/auth/login')} style={{ padding: '12px 24px', backgroundColor: '#2c5aa0', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>
+            🔐 Нэвтрэх
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  // Check if payment is verified
+ 
+
+  
+  
   return (
     <main style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
       <h1 style={{ fontSize: 32, marginBottom: 30 }}>📝 Пост оруулах</h1>
@@ -297,6 +388,19 @@ export default function CreatePost(){
         }}>
           <h2 style={{ fontSize: 18, marginBottom: 16 }}>📸 Зураг</h2>
 
+          {formData.photo && (
+            <div style={{ marginBottom: 20, textAlign: 'center' }}>
+              <img 
+                src={URL.createObjectURL(formData.photo)} 
+                alt="Preview" 
+                style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8 }}
+              />
+              <p style={{ fontSize: 14, color: '#666', marginTop: 8 }}>
+                Сонгогдсон: {formData.photo.name}
+              </p>
+            </div>
+          )}
+
           <div style={{
             border: '2px dashed #ddd',
             padding: 30,
@@ -317,7 +421,7 @@ export default function CreatePost(){
             }}>
               <p style={{ fontSize: 18, marginBottom: 8 }}>📷 Зургаа оруулна уу</p>
               <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-                {formData.photo ? `Сонгогдсон: ${formData.photo}` : 'Клик хийнэ үү эсвэл сүүлээр буулгана уу'}
+                {formData.photo ? 'Өөр зураг сонгох' : 'Клик хийнэ үү эсвэл сүүлээр буулгана уу'}
               </p>
             </label>
           </div>
@@ -432,22 +536,25 @@ export default function CreatePost(){
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
           <button
             type="submit"
+            disabled={loading}
             style={{
               padding: '14px 24px',
               fontSize: 16,
               fontWeight: 'bold',
-              backgroundColor: '#28a745',
+              backgroundColor: loading ? '#6c757d' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: 4,
-              cursor: 'pointer'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
             }}
           >
-            ✅ Пост оруулах
+            {loading ? '⏳ Оруулаж байна...' : '✅ Пост оруулах'}
           </button>
 
           <button
             type="reset"
+            disabled={loading}
             style={{
               padding: '14px 24px',
               fontSize: 16,
@@ -456,7 +563,8 @@ export default function CreatePost(){
               color: 'white',
               border: 'none',
               borderRadius: 4,
-              cursor: 'pointer'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
             }}
           >
             🔄 Цэвэрлэх
