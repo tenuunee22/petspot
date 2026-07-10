@@ -7,24 +7,24 @@ Currently in development/learning how to use Nodejs + Typescript
 
 ## To install direnv: ##
 ### [Ubuntu/Debian based distros] ###
-sudo apt install direnv
+` sudo apt install direnv `
 
 ### [Arch] ###
-sudo pacman -S direnv
+` sudo pacman -S direnv ` 
 
 ### [MacOS] ###
-brew install direnv
+` brew install direnv `
 
 ### [Windows] ###
-winget install direnv
+` winget install direnv `
 
 ## To install nix: ##
 ### [Linux/MacOS] ###
-curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+` curl -fsSL https://install.determinate.systems/nix | sh -s -- install `
 
 ### [Windows] ###
 In WSL(Windows Subsystem For Linux) run the command
-curl -fsS
+` curl -fsSL https://install.determinate.systems/nix | sh -s -- install `
 
 ## after install add this in your .zshrc or .bashrc ##
 eval "$(direnv hook zsh)"
@@ -41,8 +41,8 @@ Just run "direnv allow" in the directory and the environment will be setup for y
 
 ==============================================================================================
 
-Run:
+## Run ##
 node index.ts
 
-After, open your browser of choice and search:
+___ After, open your browser of choice and search: ___ 
 localhost:3000
