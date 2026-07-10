@@ -3,30 +3,30 @@ Currently in development/learning how to use Nodejs + Typescript
 
 ==============================================================================================
 
-Dependencies => direnv, nix
+# Dependencies => direnv, nix #
 
-To install direnv:
-[Ubuntu/Debian based distros]
+## To install direnv: ##
+### [Ubuntu/Debian based distros] ###
 sudo apt install direnv
 
-[Arch]
+### [Arch] ###
 sudo pacman -S direnv
 
-[MacOS]
+### [MacOS] ###
 brew install direnv
 
-[Windows]
+### [Windows] ###
 winget install direnv
 
-To install nix:
-[Linux/MacOS]
+## To install nix: ##
+### [Linux/MacOS] ###
 curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 
-[Windows]
+### [Windows] ###
 In WSL(Windows Subsystem For Linux) run the command
 curl -fsS
 
-after install add this in your .zshrc or .bashrc
+## after install add this in your .zshrc or .bashrc ##
 eval "$(direnv hook zsh)"
 
 ==============================================================================================
