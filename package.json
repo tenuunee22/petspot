@@ -1,0 +1,24 @@
+{
+  "name": "petspot",
+  "version": "1.0.0",
+  "description": "Petspot for Petowners",
+  "homepage": "https://github.com/tenuunee22/petspot#readme",
+  "bugs": {
+    "url": "https://github.com/tenuunee22/petspot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tenuunee22/petspot.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {}
+}

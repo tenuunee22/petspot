@@ -1,2 +1,2 @@
-index: index.js
-	node index.js
+index: index.ts
+	node index.ts
