@@ -33,7 +33,8 @@ Clone the backend branch from github
 ` git clone --branch backend https://github.com/tenuunee22/petspot `
 
 Enter the cloned repository, and you might get an error
-direnv: error /path/to/your/project/.envrc is blocked. Run ` direnv allow ` to approve its content
+` direnv: error /path/to/your/project/.envrc is blocked. `
+Run ` direnv allow ` to approve its content
 
 Just run ` direnv allow ` in the directory and the environment will be setup for you
 
