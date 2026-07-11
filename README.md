@@ -3,21 +3,21 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Status](https://img.shields.io/badge/Status-Development-red)
 
-This is the backend of the app  
+# Petspot Backend  
 > Currently in development/learning how to use Nodejs + Typescript 🚧
 
-# Getting Started #
+# Getting Started
 
-### Dependencies ###
+### Dependencies
 - direnv
 - nix
 
 Clone the backend branch from github  
 ` git clone --branch backend https://github.com/tenuunee22/petspot `
 
-Enter the cloned repository, and you might get an error  
+You might see this error  
 ` direnv: error /path/to/your/project/.envrc is blocked. `  
-Run ` direnv allow ` to approve its content and direnv will setup the environment for you
+Run ` direnv allow ` to approve its content  
 
-Run ` node index.ts `  
-Next open your browser of choice and search  ` localhost:3000 `
+Start the server ` node index.ts `  
+Open your browser of choice and visit  ` localhost:3000 `
