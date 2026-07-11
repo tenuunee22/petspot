@@ -19,5 +19,5 @@ Enter the cloned repository, and you might get an error
 ` direnv: error /path/to/your/project/.envrc is blocked. `  
 Run ` direnv allow ` to approve its content and direnv will setup the environment for you
 
-Run ` node index.ts `
-Open your browser of choice and search  ` localhost:3000 `
+Run ` node index.ts `  
+Next open your browser of choice and search  ` localhost:3000 `
