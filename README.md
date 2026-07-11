@@ -30,12 +30,12 @@ This is the backend of the app
 ` curl -fsSL https://install.determinate.systems/nix | sh -s -- install `
 
 ### [Windows] ###
-In WSL(Windows Subsystem For Linux) run the command
+In WSL(Windows Subsystem For Linux) run the command below  
 ` curl -fsSL https://install.determinate.systems/nix | sh -s -- install `
 
 
-### after install add this in your .zshrc or .bashrc ###
-eval "$(direnv hook zsh)"
+** after install add this in your .zshrc or .bashrc **  
+` eval "$(direnv hook zsh)" `
 
 # Setup #
 
