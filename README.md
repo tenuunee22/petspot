@@ -8,7 +8,7 @@ This is the backend of the app
 
 # Getting Started #
 
-## Dependencies ##
+### Dependencies ###
 - direnv
 - nix
 
