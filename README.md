@@ -1,9 +1,11 @@
 This is the backend of the app
 Currently in development/learning how to use Nodejs + Typescript
 
-==============================================================================================
+# Getting Started #
 
-# Dependencies => direnv, nix #
+## Dependencies ##
+direnv
+nix
 
 ## To install direnv: ##
 ### [Ubuntu/Debian based distros] ###
@@ -26,18 +28,21 @@ Currently in development/learning how to use Nodejs + Typescript
 In WSL(Windows Subsystem For Linux) run the command
 ` curl -fsSL https://install.determinate.systems/nix | sh -s -- install `
 
-## after install add this in your .zshrc or .bashrc ##
+
+### after install add this in your .zshrc or .bashrc ###
 eval "$(direnv hook zsh)"
 
-Clone the backend branch from github
+# Setup #
+
+### Clone the backend branch from github ###
 ` git clone --branch backend https://github.com/tenuunee22/petspot `
 
-Enter the cloned repository, and you might get an error  
+Enter the cloned repository, and you might get an error
 ` direnv: error /path/to/your/project/.envrc is blocked. `  
 Run ` direnv allow ` to approve its content and direnv will setup the environment for you
 
-## Run ##
+### Run ###
 ` node index.ts `
 
-After, open your browser of choice and search:
+### After, open your browser of choice and search ###
 ` localhost:3000 `
