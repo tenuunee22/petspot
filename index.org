@@ -1,0 +1,58 @@
+* Main Server.ts
+#+begin_src javascript :tangle server.ts
+  import express, { type Express, type Request, type Response } from 'express';
+  import { getInfo } from './getInfo.ts';
+
+  const app: Express = express();
+  const port = 3000;
+
+  app.use(express.json());
+  app.use(express.static('public'));
+
+  app.get('/', (req: Request, res: Response) => {
+  	res.sendFile(path.join(__dirname, 'public/index.html'));
+  });
+
+  app.get('/lost/petsinfo', async (req: Request, res: Response) => {
+  	const { data, error } = await getInfo();
+  	if (error) {
+    		res.status(500).json({ error: error.message });
+    		return;
+  	}
+  	res.json(data);
+  });
+
+  app.listen(port, () => { console.log(`running at ${port}`) });
+  #+end_src
+* Index.html (for testing)
+#+begin_src html :tangle ./public/index.html
+  <html>
+    <title> Petspot Backend (Fallback) </title>
+    <h1> This is a title </h1>
+  </html>
+#+end_src
+* Lost Pet Info
+#+begin_src javascript :tangle getInfo.ts
+  import { supabase } from './supaIndex.ts';
+
+  export async function addPetInfo(name: string, age: number) {
+  	const { data, error } = await supabase
+  		  .from('pets')
+  		  .insert([{ Pet_name: name, Age: age }])
+  		  .select();
+  	return { data, error };
+  }
+
+  export async function getInfo() {
+      const { data, error } = await supabase.from('pets').select('*');
+      return { data, error };
+  }
+#+end_src
+* supeIndex, index of Supabase
+#+begin_src javascript :tangle supaIndex.ts
+  import { createClient } from '@supabase/supabase-js';
+
+  const url = process.env.url || '';
+  const key = process.env.key || '';
+  export const supabase = createClient(url, key);
+#+end_src
