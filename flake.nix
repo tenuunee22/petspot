@@ -13,7 +13,8 @@
     {
       devShells.${system}.default = pkgs.mkShell {
         packages = [ 
-          pkgs.nodejs
+          pkgs.nodejs_22
+		  pkgs.typescript
         ];
       };
     };
