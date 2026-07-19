@@ -15,8 +15,8 @@
         packages = [ 
           pkgs.nodejs_22
 		  pkgs.typescript
+		  pkgs.supabase-cli
         ];
       };
     };
 }
-
