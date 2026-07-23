@@ -1,58 +1,92 @@
-* Main Server.ts
+* Typescript files
+*** Listening Ports
+***** server.ts
 #+begin_src javascript :tangle server.ts
-  import express, { type Express, type Request, type Response } from 'express';
-  import { getInfo } from './getInfo.ts';
+import express, { type Express, type Request, type Response } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-  const app: Express = express();
-  const port = 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-  app.use(express.json());
-  app.use(express.static('public'));
+const app: Express = express();
+const port = 3000;
 
-  app.get('/', (req: Request, res: Response) => {
-  	res.sendFile(path.join(__dirname, 'public/index.html'));
-  });
+app.use(express.json());
+app.use(express.static('public'));
 
-  app.get('/lost/petsinfo', async (req: Request, res: Response) => {
-  	const { data, error } = await getInfo();
-  	if (error) {
-    		res.status(500).json({ error: error.message });
-    		return;
-  	}
-  	res.json(data);
-  });
+app.get('/', (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'public/mainpage.html'));
+});
 
-  app.listen(port, () => { console.log(`running at ${port}`) });
-  #+end_src
-* Index.html (for testing)
-#+begin_src html :tangle ./public/index.html
-  <html>
-    <title> Petspot Backend (Fallback) </title>
-    <h1> This is a title </h1>
-  </html>
+app.get('/lost/petsinfo', async (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'public/submitPetInfo.html'));
+});
+
+app.listen(port, () => { console.log(`running at ${port}`) });
 #+end_src
-* Lost Pet Info
-#+begin_src javascript :tangle getInfo.ts
-  import { supabase } from './supaIndex.ts';
+*** Keys
+***** supabase.js
+#+begin_src javascript :tangle ./public/modules/supabase.js
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-  export async function addPetInfo(name: string, age: number) {
-  	const { data, error } = await supabase
-  		  .from('pets')
-  		  .insert([{ Pet_name: name, Age: age }])
-  		  .select();
-  	return { data, error };
-  }
+const url="https://gsxccgtamjhbsrkzfgjd.supabase.co";
+const key="sb_publishable_qgE2p7ZF8mLMajwsRA9cQg_F1yv4gfD";
 
-  export async function getInfo() {
-      const { data, error } = await supabase.from('pets').select('*');
-      return { data, error };
-  }
+export const supabase = createClient(url, key);
 #+end_src
-* supeIndex, index of Supabase
-#+begin_src javascript :tangle supaIndex.ts
-  import { createClient } from '@supabase/supabase-js';
+*** Modules
+***** submitPetInfo.js
+#+begin_src javascript :tangle ./public/modules/submitPetInfo.js
+import { supabase } from './supabase.js';
 
-  const url = process.env.url || '';
-  const key = process.env.key || '';
-  export const supabase = createClient(url, key);
+export async function submitPetInfo(Pet_name, Age) {
+    const { data, error } = await supabase
+          .from('pets')
+          .insert([ { Pet_name, Age } ]);
+    
+    if (error) { console.log("something went wrong", error); return { success: false, error } }
+    else { console.log("success"); return { success: true, data } }
+}
+
+const form = document.getElementById('petForm');
+
+if(form) {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('petName').value;
+        const age = Number(document.getElementById('petAge').value);
+
+        const result = await submitPetInfo(name, age);
+        if(result.success) { form.reset(); }
+    });
+}
+
+#+end_src
+* Html files
+***** mainpage.html
+#+begin_src html :tangle ./public/mainpage.html
+<html>
+  <title> Petspot Backend (Fallback) </title>
+  <h1> This is a title </h1>
+
+  <a href="/lost/petsinfo">
+    <button>Submit your lost pet</button>
+  </a>
+</html>
+#+end_src
+***** submitPetInfo.html
+#+begin_src html :tangle ./public/submitPetInfo.html
+<html>
+  <title> Submit lost petinfo information </title>
+  <h1> Submit lost petinfo here </h1>
+
+  <form id="petForm">
+    <input type="text" id="petName" placeholder="Pet Name" required />
+    <input type="number" id="petAge" placeholder="Pet Age" required />  
+    <button type="submit">Submit</button>
+  </form>
+  
+  <script type="module" src="/modules/submitPetInfo.js"></script>
+</html>
 #+end_src

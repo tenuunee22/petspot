@@ -1,0 +1,29 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/achka/Documents/petspot/index.org
+
+
+* getInfo.ts
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-07-23 Thu 21:18
+:ARCHIVE_FILE: ~/Documents/petspot/index.org
+:ARCHIVE_OLPATH: Typescript files/Modules
+:ARCHIVE_CATEGORY: index
+:END:
+#+begin_src javascript :tangle ./scripts/getInfo.ts
+import { supabase } from '../src/supabase.js';
+
+export async function addPetInfo(name: string, age: number) {
+    const { data, error } = await supabase
+          .from('pets')
+          .insert([{ Pet_name: name, Age: age }])
+          .select();
+    return { data, error };
+}
+
+export async function getInfo() {
+    const { data, error } = await supabase.from('pets').select('*');
+    return { data, error };
+}
+#+end_src
