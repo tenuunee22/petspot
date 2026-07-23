@@ -5,6 +5,7 @@
 
 # Petspot Backend  
 > Currently in development/learning how to use Nodejs + Typescript 🚧
+> For Windows Users, you will need WSL (Windows Subsystem For Linux) for the direnv to actually work
 
 # Getting Started
 
@@ -16,8 +17,8 @@ Clone the backend branch from github
 ` git clone --branch backend https://github.com/tenuunee22/petspot `
 
 You might see this error  
-` direnv: error /path/to/your/project/.envrc is blocked. `  
+` direnv: error /path/to/your/project/.envrc is blocked. `
 Run ` direnv allow ` to approve its content  
 
-Start the server ` node index.ts `  
+Start the server ` make -k `  
 Open your browser of choice and visit  ` localhost:3000 `
