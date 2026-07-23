@@ -4,7 +4,7 @@
 ![Status](https://img.shields.io/badge/Status-Development-red)
 
 # Petspot Backend  
-> Currently in development/learning how to use Nodejs + Typescript 🚧
+> Currently in development/learning how to use Nodejs + Typescript 🚧  
 > For Windows Users, you will need WSL (Windows Subsystem For Linux) for the direnv to actually work
 
 # Getting Started
